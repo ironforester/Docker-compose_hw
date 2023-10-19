@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    command: bash -c "python manage.py migrate && python manage.py collectstatic --noinput  && gunicorn stocks_products.wsgi:application --bind 0.0.0.0:8000"
+    depends_on:
+      - postgres
+    environment:
+      SECRET_KEY: jango-insecure-nw^y+m^wmxza1asgk+)!ua2qx9)g
+      DEBUG: True
+      ALLOWED_HOSTS: 127.0.0.1
+      DB_ENGINE: django.db.backends.postgresql
+      DB_HOST: postgres
+      DB_USER: postgres
+      DB_PORT: 5431
+      DB_NAME: my_db
+      DB_PASSWORD: 12345
+
+
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: my_db
+      POSTGRES_USER: postgres
+
+
+    ports:
+      - "5431:5432"
+
+    restart: always
+    volumes:
+      - .:/logs:/var/log
+      - .:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+volumes:
+  pgdata:
